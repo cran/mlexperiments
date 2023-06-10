@@ -1,0 +1,286 @@
+## ---- include = FALSE---------------------------------------------------------
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  eval = FALSE,
+  comment = "#>"
+)
+
+## ----setup--------------------------------------------------------------------
+#  library(mlexperiments)
+
+## -----------------------------------------------------------------------------
+#  library(mlbench)
+#  data("PimaIndiansDiabetes2")
+#  dataset <- PimaIndiansDiabetes2 |>
+#    data.table::as.data.table() |>
+#    na.omit()
+#  
+#  feature_cols <- colnames(dataset)[1:8]
+#  target_col <- "diabetes"
+
+## -----------------------------------------------------------------------------
+#  seed <- 123
+#  if (isTRUE(as.logical(Sys.getenv("_R_CHECK_LIMIT_CORES_")))) {
+#    # on cran
+#    ncores <- 2L
+#  } else {
+#    ncores <- ifelse(
+#      test = parallel::detectCores() > 4,
+#      yes = 4L,
+#      no = ifelse(
+#        test = parallel::detectCores() < 2L,
+#        yes = 1L,
+#        no = parallel::detectCores()
+#      )
+#    )
+#  }
+#  options("mlexperiments.bayesian.max_init" = 10L)
+
+## -----------------------------------------------------------------------------
+#  data_split <- splitTools::partition(
+#    y = dataset[, get(target_col)],
+#    p = c(train = 0.7, test = 0.3),
+#    type = "stratified",
+#    seed = seed
+#  )
+#  
+#  train_x <- model.matrix(
+#    ~ -1 + .,
+#    dataset[data_split$train, .SD, .SDcols = feature_cols]
+#  )
+#  train_y <- as.integer(dataset[data_split$train, get(target_col)]) - 1L
+#  
+#  
+#  test_x <- model.matrix(
+#    ~ -1 + .,
+#    dataset[data_split$test, .SD, .SDcols = feature_cols]
+#  )
+#  test_y <- as.integer(dataset[data_split$test, get(target_col)]) - 1L
+
+## -----------------------------------------------------------------------------
+#  fold_list <- splitTools::create_folds(
+#    y = train_y,
+#    k = 3,
+#    type = "stratified",
+#    seed = seed
+#  )
+
+## -----------------------------------------------------------------------------
+#  # required learner arguments, not optimized
+#  learner_args <- list(
+#    l = 2,
+#    test = parse(text = "fold_test$x"),
+#    use.all = FALSE
+#  )
+#  
+#  # set arguments for predict function and performance metric,
+#  # required for mlexperiments::MLCrossValidation and
+#  # mlexperiments::MLNestedCV
+#  predict_args <- list(type = "response")
+#  performance_metric <- metric("acc")
+#  performance_metric_args <- NULL
+#  return_models <- FALSE
+#  
+#  # required for grid search and initialization of bayesian optimization
+#  parameter_grid <- expand.grid(
+#    k = seq(4, 68, 6)
+#  )
+#  # reduce to a maximum of 10 rows
+#  if (nrow(parameter_grid) > 10) {
+#    set.seed(123)
+#    sample_rows <- sample(seq_len(nrow(parameter_grid)), 10, FALSE)
+#    parameter_grid <- kdry::mlh_subset(parameter_grid, sample_rows)
+#  }
+#  
+#  # required for bayesian optimization
+#  parameter_bounds <- list(k = c(2L, 80L))
+#  optim_args <- list(
+#    iters.n = ncores,
+#    kappa = 3.5,
+#    acq = "ucb"
+#  )
+
+## -----------------------------------------------------------------------------
+#  tuner <- mlexperiments::MLTuneParameters$new(
+#    learner = LearnerKnn$new(),
+#    strategy = "grid",
+#    ncores = ncores,
+#    seed = seed
+#  )
+#  
+#  tuner$parameter_grid <- parameter_grid
+#  tuner$learner_args <- learner_args
+#  tuner$split_type <- "stratified"
+#  
+#  tuner$set_data(
+#    x = train_x,
+#    y = train_y
+#  )
+#  
+#  tuner_results_grid <- tuner$execute(k = 3)
+#  
+#  head(tuner_results_grid)
+#  #>    setting_id metric_optim_mean  k l use.all
+#  #> 1:          1         0.2224638 16 2   FALSE
+#  #> 2:          2         0.2628019 64 2   FALSE
+#  #> 3:          3         0.2297907 10 2   FALSE
+#  #> 4:          4         0.2371981 34 2   FALSE
+#  #> 5:          5         0.2627214 58 2   FALSE
+#  #> 6:          6         0.2444444 28 2   FALSE
+
+## -----------------------------------------------------------------------------
+#  tuner <- mlexperiments::MLTuneParameters$new(
+#    learner = LearnerKnn$new(),
+#    strategy = "bayesian",
+#    ncores = ncores,
+#    seed = seed
+#  )
+#  
+#  tuner$parameter_grid <- parameter_grid
+#  tuner$parameter_bounds <- parameter_bounds
+#  
+#  tuner$learner_args <- learner_args
+#  tuner$optim_args <- optim_args
+#  
+#  tuner$split_type <- "stratified"
+#  
+#  tuner$set_data(
+#    x = train_x,
+#    y = train_y
+#  )
+#  
+#  tuner_results_bayesian <- tuner$execute(k = 3)
+#  #> Registering parallel backend using 4 cores.
+#  
+#  head(tuner_results_bayesian)
+#  #>    Epoch setting_id  k gpUtility acqOptimum inBounds Elapsed      Score metric_optim_mean errorMessage l use.all
+#  #> 1:     0          1 16        NA      FALSE     TRUE   0.024 -0.2262480         0.2262480           NA 2   FALSE
+#  #> 2:     0          2 64        NA      FALSE     TRUE   0.026 -0.2700483         0.2700483           NA 2   FALSE
+#  #> 3:     0          3 10        NA      FALSE     TRUE   0.023 -0.2370370         0.2370370           NA 2   FALSE
+#  #> 4:     0          4 34        NA      FALSE     TRUE   0.025 -0.2262480         0.2262480           NA 2   FALSE
+#  #> 5:     0          5 58        NA      FALSE     TRUE   0.008 -0.2735910         0.2735910           NA 2   FALSE
+#  #> 6:     0          6 28        NA      FALSE     TRUE   0.006 -0.2589372         0.2589372           NA 2   FALSE
+
+## -----------------------------------------------------------------------------
+#  validator <- mlexperiments::MLCrossValidation$new(
+#    learner = LearnerKnn$new(),
+#    fold_list = fold_list,
+#    ncores = ncores,
+#    seed = seed
+#  )
+#  
+#  validator$learner_args <- tuner$results$best.setting[-1]
+#  
+#  validator$predict_args <- predict_args
+#  validator$performance_metric <- performance_metric
+#  validator$performance_metric_args <- performance_metric_args
+#  validator$return_models <- return_models
+#  
+#  validator$set_data(
+#    x = train_x,
+#    y = train_y
+#  )
+#  
+#  validator_results <- validator$execute()
+#  #>
+#  #> CV fold: Fold1
+#  #>
+#  #> CV fold: Fold2
+#  #>
+#  #> CV fold: Fold3
+#  
+#  head(validator_results)
+#  #>     fold performance  k l use.all
+#  #> 1: Fold1   0.7934783 16 2   FALSE
+#  #> 2: Fold2   0.7391304 16 2   FALSE
+#  #> 3: Fold3   0.8000000 16 2   FALSE
+
+## -----------------------------------------------------------------------------
+#  validator <- mlexperiments::MLNestedCV$new(
+#    learner = LearnerKnn$new(),
+#    strategy = "grid",
+#    fold_list = fold_list,
+#    k_tuning = 3L,
+#    ncores = ncores,
+#    seed = seed
+#  )
+#  
+#  validator$parameter_grid <- parameter_grid
+#  validator$learner_args <- learner_args
+#  validator$split_type <- "stratified"
+#  
+#  validator$predict_args <- predict_args
+#  validator$performance_metric <- performance_metric
+#  validator$performance_metric_args <- performance_metric_args
+#  validator$return_models <- return_models
+#  
+#  validator$set_data(
+#    x = train_x,
+#    y = train_y
+#  )
+#  
+#  validator_results <- validator$execute()
+#  #>
+#  #> CV fold: Fold1
+#  #>
+#  #> CV fold: Fold2
+#  #>
+#  #> CV fold: Fold3
+#  #> CV progress [==========================================================================================================] 3/3 (100%)
+#  
+#  head(validator_results)
+#  #>     fold performance  k l use.all
+#  #> 1: Fold1   0.7391304 22 2   FALSE
+#  #> 2: Fold2   0.7391304 28 2   FALSE
+#  #> 3: Fold3   0.7666667 34 2   FALSE
+
+## -----------------------------------------------------------------------------
+#  validator <- mlexperiments::MLNestedCV$new(
+#    learner = LearnerKnn$new(),
+#    strategy = "bayesian",
+#    fold_list = fold_list,
+#    k_tuning = 3L,
+#    ncores = ncores,
+#    seed = seed
+#  )
+#  
+#  validator$parameter_grid <- parameter_grid
+#  validator$learner_args <- learner_args
+#  validator$split_type <- "stratified"
+#  
+#  
+#  validator$parameter_bounds <- parameter_bounds
+#  validator$optim_args <- optim_args
+#  
+#  validator$predict_args <- predict_args
+#  validator$performance_metric <- performance_metric
+#  validator$performance_metric_args <- performance_metric_args
+#  validator$return_models <- return_models
+#  
+#  validator$set_data(
+#    x = train_x,
+#    y = train_y
+#  )
+#  
+#  validator_results <- validator$execute()
+#  #>
+#  #> CV fold: Fold1
+#  #>
+#  #> Registering parallel backend using 4 cores.
+#  #>
+#  #> CV fold: Fold2
+#  #> CV progress [======================================================================>-----------------------------------] 2/3 ( 67%)
+#  #>
+#  #> Registering parallel backend using 4 cores.
+#  #>
+#  #> CV fold: Fold3
+#  #> CV progress [==========================================================================================================] 3/3 (100%)
+#  #>
+#  #> Registering parallel backend using 4 cores.
+#  
+#  head(validator_results)
+#  #>     fold performance  k l use.all
+#  #> 1: Fold1   0.7391304 22 2   FALSE
+#  #> 2: Fold2   0.7934783 10 2   FALSE
+#  #> 3: Fold3   0.7888889 10 2   FALSE
+
