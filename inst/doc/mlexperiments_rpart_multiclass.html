@@ -340,427 +340,427 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mlexperiments)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(mlexperiments)</span></code></pre></div>
 <p>See <a href="https://github.com/kapsner/mlexperiments/blob/main/R/learner_rpart.R">https://github.com/kapsner/mlexperiments/blob/main/R/learner_rpart.R</a>
 for implementation details.</p>
 <div id="preprocessing" class="section level1">
 <h1>Preprocessing</h1>
 <div id="import-and-prepare-data" class="section level2">
 <h2>Import and Prepare Data</h2>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mlbench)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">&quot;DNA&quot;</span>)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> DNA <span class="sc">|&gt;</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  data.table<span class="sc">::</span><span class="fu">as.data.table</span>() <span class="sc">|&gt;</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">na.omit</span>()</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>feature_cols <span class="ot">&lt;-</span> <span class="fu">colnames</span>(dataset)[<span class="dv">1</span><span class="sc">:</span><span class="dv">180</span>]</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>target_col <span class="ot">&lt;-</span> <span class="st">&quot;Class&quot;</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">library</span>(mlbench)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">data</span>(<span class="st">&quot;DNA&quot;</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>dataset <span class="ot">&lt;-</span> DNA <span class="sc">|&gt;</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  data.table<span class="sc">::</span><span class="fu">as.data.table</span>() <span class="sc">|&gt;</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="fu">na.omit</span>()</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>feature_cols <span class="ot">&lt;-</span> <span class="fu">colnames</span>(dataset)[<span class="dv">1</span><span class="sc">:</span><span class="dv">180</span>]</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>target_col <span class="ot">&lt;-</span> <span class="st">&quot;Class&quot;</span></span></code></pre></div>
 </div>
 <div id="general-configurations" class="section level2">
 <h2>General Configurations</h2>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>seed <span class="ot">&lt;-</span> <span class="dv">123</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">isTRUE</span>(<span class="fu">as.logical</span>(<span class="fu">Sys.getenv</span>(<span class="st">&quot;_R_CHECK_LIMIT_CORES_&quot;</span>)))) {</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># on cran</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  ncores <span class="ot">&lt;-</span> 2L</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  ncores <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">test =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">&gt;</span> <span class="dv">4</span>,</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">yes =</span> 4L,</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">no =</span> <span class="fu">ifelse</span>(</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>      <span class="at">test =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">&lt;</span> 2L,</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>      <span class="at">yes =</span> 1L,</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>      <span class="at">no =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>()</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="st">&quot;mlexperiments.bayesian.max_init&quot;</span> <span class="ot">=</span> 10L)</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>seed <span class="ot">&lt;-</span> <span class="dv">123</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">isTRUE</span>(<span class="fu">as.logical</span>(<span class="fu">Sys.getenv</span>(<span class="st">&quot;_R_CHECK_LIMIT_CORES_&quot;</span>)))) {</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="co"># on cran</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  ncores <span class="ot">&lt;-</span> 2L</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  ncores <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>    <span class="at">test =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">&gt;</span> <span class="dv">4</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>    <span class="at">yes =</span> 4L,</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>    <span class="at">no =</span> <span class="fu">ifelse</span>(</span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>      <span class="at">test =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">&lt;</span> 2L,</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>      <span class="at">yes =</span> 1L,</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>      <span class="at">no =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>()</span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>    )</span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a>  )</span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a>}</span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="fu">options</span>(<span class="st">&quot;mlexperiments.bayesian.max_init&quot;</span> <span class="ot">=</span> 10L)</span></code></pre></div>
 </div>
 <div id="generate-training--and-test-data" class="section level2">
 <h2>Generate Training- and Test Data</h2>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>data_split <span class="ot">&lt;-</span> splitTools<span class="sc">::</span><span class="fu">partition</span>(</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> dataset[, <span class="fu">get</span>(target_col)],</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">p =</span> <span class="fu">c</span>(<span class="at">train =</span> <span class="fl">0.7</span>, <span class="at">test =</span> <span class="fl">0.3</span>),</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">&quot;stratified&quot;</span>,</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">seed =</span> seed</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>train_x <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="sc">~</span> <span class="sc">-</span><span class="dv">1</span> <span class="sc">+</span> .,</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  dataset[data_split<span class="sc">$</span>train, .SD, <span class="at">.SDcols =</span> feature_cols]</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>train_y <span class="ot">&lt;-</span> dataset[data_split<span class="sc">$</span>train, <span class="fu">get</span>(target_col)]</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>test_x <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(</span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  <span class="sc">~</span> <span class="sc">-</span><span class="dv">1</span> <span class="sc">+</span> .,</span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  dataset[data_split<span class="sc">$</span>test, .SD, <span class="at">.SDcols =</span> feature_cols]</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>test_y <span class="ot">&lt;-</span> dataset[data_split<span class="sc">$</span>test, <span class="fu">get</span>(target_col)]</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>data_split <span class="ot">&lt;-</span> splitTools<span class="sc">::</span><span class="fu">partition</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="at">y =</span> dataset[, <span class="fu">get</span>(target_col)],</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">p =</span> <span class="fu">c</span>(<span class="at">train =</span> <span class="fl">0.7</span>, <span class="at">test =</span> <span class="fl">0.3</span>),</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">&quot;stratified&quot;</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="at">seed =</span> seed</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>)</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>train_x <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>  <span class="sc">~</span> <span class="sc">-</span><span class="dv">1</span> <span class="sc">+</span> .,</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>  dataset[data_split<span class="sc">$</span>train, .SD, <span class="at">.SDcols =</span> feature_cols]</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>)</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>train_y <span class="ot">&lt;-</span> dataset[data_split<span class="sc">$</span>train, <span class="fu">get</span>(target_col)]</span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a></span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>test_x <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(</span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>  <span class="sc">~</span> <span class="sc">-</span><span class="dv">1</span> <span class="sc">+</span> .,</span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>  dataset[data_split<span class="sc">$</span>test, .SD, <span class="at">.SDcols =</span> feature_cols]</span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>)</span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a>test_y <span class="ot">&lt;-</span> dataset[data_split<span class="sc">$</span>test, <span class="fu">get</span>(target_col)]</span></code></pre></div>
 </div>
 <div id="generate-training-data-folds" class="section level2">
 <h2>Generate Training Data Folds</h2>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>fold_list <span class="ot">&lt;-</span> splitTools<span class="sc">::</span><span class="fu">create_folds</span>(</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> train_y,</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">k =</span> <span class="dv">3</span>,</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">&quot;stratified&quot;</span>,</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">seed =</span> seed</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>fold_list <span class="ot">&lt;-</span> splitTools<span class="sc">::</span><span class="fu">create_folds</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  <span class="at">y =</span> train_y,</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="at">k =</span> <span class="dv">3</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">&quot;stratified&quot;</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="at">seed =</span> seed</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>)</span></code></pre></div>
 </div>
 </div>
 <div id="experiments" class="section level1">
 <h1>Experiments</h1>
 <div id="prepare-experiments" class="section level2">
 <h2>Prepare Experiments</h2>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># required learner arguments, not optimized</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>learner_args <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">method =</span> <span class="st">&quot;class&quot;</span>)</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># set arguments for predict function and performance metric,</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co"># required for mlexperiments::MLCrossValidation and</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co"># mlexperiments::MLNestedCV</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>predict_args <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">type =</span> <span class="st">&quot;class&quot;</span>)</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>performance_metric <span class="ot">&lt;-</span> <span class="fu">metric</span>(<span class="st">&quot;bacc&quot;</span>)</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>performance_metric_args <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>return_models <span class="ot">&lt;-</span> <span class="cn">FALSE</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co"># required for grid search and initialization of bayesian optimization</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>parameter_grid <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">minsplit =</span> <span class="fu">seq</span>(2L, 82L, 10L),</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">cp =</span> <span class="fu">seq</span>(<span class="fl">0.01</span>, <span class="fl">0.1</span>, <span class="fl">0.01</span>),</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">maxdepth =</span> <span class="fu">seq</span>(2L, 30L, 5L)</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="co"># reduce to a maximum of 10 rows</span></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">nrow</span>(parameter_grid) <span class="sc">&gt;</span> <span class="dv">10</span>) {</span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>  sample_rows <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">seq_len</span>(<span class="fu">nrow</span>(parameter_grid)), <span class="dv">10</span>, <span class="cn">FALSE</span>)</span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>  parameter_grid <span class="ot">&lt;-</span> kdry<span class="sc">::</span><span class="fu">mlh_subset</span>(parameter_grid, sample_rows)</span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="co"># required for bayesian optimization</span></span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>parameter_bounds <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">minsplit =</span> <span class="fu">c</span>(2L, 100L),</span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">cp =</span> <span class="fu">c</span>(<span class="fl">0.01</span>, <span class="fl">0.1</span>),</span>
-<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">maxdepth =</span> <span class="fu">c</span>(2L, 30L)</span>
-<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>optim_args <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">iters.n =</span> ncores,</span>
-<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">kappa =</span> <span class="fl">3.5</span>,</span>
-<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>  <span class="at">acq =</span> <span class="st">&quot;ucb&quot;</span></span>
-<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># required learner arguments, not optimized</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>learner_args <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">method =</span> <span class="st">&quot;class&quot;</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co"># set arguments for predict function and performance metric,</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co"># required for mlexperiments::MLCrossValidation and</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="co"># mlexperiments::MLNestedCV</span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>predict_args <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">type =</span> <span class="st">&quot;class&quot;</span>)</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>performance_metric <span class="ot">&lt;-</span> <span class="fu">metric</span>(<span class="st">&quot;bacc&quot;</span>)</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>performance_metric_args <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>return_models <span class="ot">&lt;-</span> <span class="cn">FALSE</span></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co"># required for grid search and initialization of bayesian optimization</span></span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>parameter_grid <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(</span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>  <span class="at">minsplit =</span> <span class="fu">seq</span>(2L, 82L, 10L),</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>  <span class="at">cp =</span> <span class="fu">seq</span>(<span class="fl">0.01</span>, <span class="fl">0.1</span>, <span class="fl">0.01</span>),</span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>  <span class="at">maxdepth =</span> <span class="fu">seq</span>(2L, 30L, 5L)</span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>)</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="co"># reduce to a maximum of 10 rows</span></span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">nrow</span>(parameter_grid) <span class="sc">&gt;</span> <span class="dv">10</span>) {</span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>  <span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>  sample_rows <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">seq_len</span>(<span class="fu">nrow</span>(parameter_grid)), <span class="dv">10</span>, <span class="cn">FALSE</span>)</span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a>  parameter_grid <span class="ot">&lt;-</span> kdry<span class="sc">::</span><span class="fu">mlh_subset</span>(parameter_grid, sample_rows)</span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a>}</span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a></span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co"># required for bayesian optimization</span></span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a>parameter_bounds <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a>  <span class="at">minsplit =</span> <span class="fu">c</span>(2L, 100L),</span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a>  <span class="at">cp =</span> <span class="fu">c</span>(<span class="fl">0.01</span>, <span class="fl">0.1</span>),</span>
+<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a>  <span class="at">maxdepth =</span> <span class="fu">c</span>(2L, 30L)</span>
+<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a>)</span>
+<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a>optim_args <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a>  <span class="at">iters.n =</span> ncores,</span>
+<span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a>  <span class="at">kappa =</span> <span class="fl">3.5</span>,</span>
+<span id="cb6-34"><a href="#cb6-34" tabindex="-1"></a>  <span class="at">acq =</span> <span class="st">&quot;ucb&quot;</span></span>
+<span id="cb6-35"><a href="#cb6-35" tabindex="-1"></a>)</span></code></pre></div>
 </div>
 <div id="hyperparameter-tuning" class="section level2">
 <h2>Hyperparameter Tuning</h2>
 <div id="grid-search" class="section level3">
 <h3>Grid Search</h3>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>tuner <span class="ot">&lt;-</span> mlexperiments<span class="sc">::</span>MLTuneParameters<span class="sc">$</span><span class="fu">new</span>(</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">learner =</span> LearnerRpart<span class="sc">$</span><span class="fu">new</span>(),</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">strategy =</span> <span class="st">&quot;grid&quot;</span>,</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">ncores =</span> ncores,</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">seed =</span> seed</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>tuner<span class="sc">$</span>parameter_grid <span class="ot">&lt;-</span> parameter_grid</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>tuner<span class="sc">$</span>learner_args <span class="ot">&lt;-</span> learner_args</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>tuner<span class="sc">$</span>split_type <span class="ot">&lt;-</span> <span class="st">&quot;stratified&quot;</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>tuner<span class="sc">$</span><span class="fu">set_data</span>(</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> train_x,</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> train_y</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>tuner_results_grid <span class="ot">&lt;-</span> tuner<span class="sc">$</span><span class="fu">execute</span>(<span class="at">k =</span> <span class="dv">3</span>)</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [==================&gt;-----------------------------------------------------------------------------] 2/10 ( 20%)</span></span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [============================&gt;-------------------------------------------------------------------] 3/10 ( 30%)</span></span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=====================================&gt;----------------------------------------------------------] 4/10 ( 40%)</span></span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [===============================================&gt;------------------------------------------------] 5/10 ( 50%)</span></span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=========================================================&gt;--------------------------------------] 6/10 ( 60%)</span></span>
-<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [==================================================================&gt;-----------------------------] 7/10 ( 70%)</span></span>
-<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [============================================================================&gt;-------------------] 8/10 ( 80%)</span></span>
-<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=====================================================================================&gt;----------] 9/10 ( 90%)</span></span>
-<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [===============================================================================================] 10/10 (100%)                                                                                                                                  </span></span>
-<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(tuner_results_grid)</span>
-<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    setting_id metric_optim_mean minsplit   cp maxdepth method</span></span>
-<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1:          1        0.09465558        2 0.07       22  class</span></span>
-<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2:          2        0.09465558       32 0.02       27  class</span></span>
-<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3:          3        0.09465558       72 0.10        7  class</span></span>
-<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4:          4        0.09465558       32 0.09       27  class</span></span>
-<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5:          5        0.09465558       52 0.02       12  class</span></span>
-<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6:          6        0.09465558        2 0.04        7  class</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>tuner <span class="ot">&lt;-</span> mlexperiments<span class="sc">::</span>MLTuneParameters<span class="sc">$</span><span class="fu">new</span>(</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="at">learner =</span> LearnerRpart<span class="sc">$</span><span class="fu">new</span>(),</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="at">strategy =</span> <span class="st">&quot;grid&quot;</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="at">ncores =</span> ncores,</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="at">seed =</span> seed</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>)</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>tuner<span class="sc">$</span>parameter_grid <span class="ot">&lt;-</span> parameter_grid</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>tuner<span class="sc">$</span>learner_args <span class="ot">&lt;-</span> learner_args</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>tuner<span class="sc">$</span>split_type <span class="ot">&lt;-</span> <span class="st">&quot;stratified&quot;</span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>tuner<span class="sc">$</span><span class="fu">set_data</span>(</span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>  <span class="at">x =</span> train_x,</span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>  <span class="at">y =</span> train_y</span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>)</span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>tuner_results_grid <span class="ot">&lt;-</span> tuner<span class="sc">$</span><span class="fu">execute</span>(<span class="at">k =</span> <span class="dv">3</span>)</span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a><span class="co">#&gt; Parameter settings [==================&gt;-----------------------------------------------------------------------------] 2/10 ( 20%)</span></span>
+<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a><span class="co">#&gt; Parameter settings [============================&gt;-------------------------------------------------------------------] 3/10 ( 30%)</span></span>
+<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=====================================&gt;----------------------------------------------------------] 4/10 ( 40%)</span></span>
+<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-30"><a href="#cb7-30" tabindex="-1"></a><span class="co">#&gt; Parameter settings [===============================================&gt;------------------------------------------------] 5/10 ( 50%)</span></span>
+<span id="cb7-31"><a href="#cb7-31" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb7-32"><a href="#cb7-32" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-33"><a href="#cb7-33" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=========================================================&gt;--------------------------------------] 6/10 ( 60%)</span></span>
+<span id="cb7-34"><a href="#cb7-34" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb7-35"><a href="#cb7-35" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-36"><a href="#cb7-36" tabindex="-1"></a><span class="co">#&gt; Parameter settings [==================================================================&gt;-----------------------------] 7/10 ( 70%)</span></span>
+<span id="cb7-37"><a href="#cb7-37" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb7-38"><a href="#cb7-38" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-39"><a href="#cb7-39" tabindex="-1"></a><span class="co">#&gt; Parameter settings [============================================================================&gt;-------------------] 8/10 ( 80%)</span></span>
+<span id="cb7-40"><a href="#cb7-40" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb7-41"><a href="#cb7-41" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-42"><a href="#cb7-42" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=====================================================================================&gt;----------] 9/10 ( 90%)</span></span>
+<span id="cb7-43"><a href="#cb7-43" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb7-44"><a href="#cb7-44" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-45"><a href="#cb7-45" tabindex="-1"></a><span class="co">#&gt; Parameter settings [===============================================================================================] 10/10 (100%)                                                                                                                                  </span></span>
+<span id="cb7-46"><a href="#cb7-46" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb7-47"><a href="#cb7-47" tabindex="-1"></a></span>
+<span id="cb7-48"><a href="#cb7-48" tabindex="-1"></a><span class="fu">head</span>(tuner_results_grid)</span>
+<span id="cb7-49"><a href="#cb7-49" tabindex="-1"></a><span class="co">#&gt;    setting_id metric_optim_mean minsplit   cp maxdepth method</span></span>
+<span id="cb7-50"><a href="#cb7-50" tabindex="-1"></a><span class="co">#&gt; 1:          1        0.09465558        2 0.07       22  class</span></span>
+<span id="cb7-51"><a href="#cb7-51" tabindex="-1"></a><span class="co">#&gt; 2:          2        0.09465558       32 0.02       27  class</span></span>
+<span id="cb7-52"><a href="#cb7-52" tabindex="-1"></a><span class="co">#&gt; 3:          3        0.09465558       72 0.10        7  class</span></span>
+<span id="cb7-53"><a href="#cb7-53" tabindex="-1"></a><span class="co">#&gt; 4:          4        0.09465558       32 0.09       27  class</span></span>
+<span id="cb7-54"><a href="#cb7-54" tabindex="-1"></a><span class="co">#&gt; 5:          5        0.09465558       52 0.02       12  class</span></span>
+<span id="cb7-55"><a href="#cb7-55" tabindex="-1"></a><span class="co">#&gt; 6:          6        0.09465558        2 0.04        7  class</span></span></code></pre></div>
 </div>
 <div id="bayesian-optimization" class="section level3">
 <h3>Bayesian Optimization</h3>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>tuner <span class="ot">&lt;-</span> mlexperiments<span class="sc">::</span>MLTuneParameters<span class="sc">$</span><span class="fu">new</span>(</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">learner =</span> LearnerRpart<span class="sc">$</span><span class="fu">new</span>(),</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">strategy =</span> <span class="st">&quot;bayesian&quot;</span>,</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">ncores =</span> ncores,</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">seed =</span> seed</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>tuner<span class="sc">$</span>parameter_grid <span class="ot">&lt;-</span> parameter_grid</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>tuner<span class="sc">$</span>parameter_bounds <span class="ot">&lt;-</span> parameter_bounds</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>tuner<span class="sc">$</span>learner_args <span class="ot">&lt;-</span> learner_args</span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>tuner<span class="sc">$</span>optim_args <span class="ot">&lt;-</span> optim_args</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>tuner<span class="sc">$</span>split_type <span class="ot">&lt;-</span> <span class="st">&quot;stratified&quot;</span></span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>tuner<span class="sc">$</span><span class="fu">set_data</span>(</span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> train_x,</span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> train_y</span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>tuner_results_bayesian <span class="ot">&lt;-</span> tuner<span class="sc">$</span><span class="fu">execute</span>(<span class="at">k =</span> <span class="dv">3</span>)</span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Registering parallel backend using 4 cores.</span></span>
-<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(tuner_results_bayesian)</span>
-<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    Epoch setting_id minsplit   cp maxdepth gpUtility acqOptimum inBounds Elapsed       Score metric_optim_mean errorMessage method</span></span>
-<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1:     0          1        2 0.07       22        NA      FALSE     TRUE   2.108 -0.09465558        0.09465558           NA  class</span></span>
-<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2:     0          2       32 0.02       27        NA      FALSE     TRUE   2.122 -0.09465558        0.09465558           NA  class</span></span>
-<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3:     0          3       72 0.10        7        NA      FALSE     TRUE   2.025 -0.09465558        0.09465558           NA  class</span></span>
-<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4:     0          4       32 0.09       27        NA      FALSE     TRUE   2.258 -0.09465558        0.09465558           NA  class</span></span>
-<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5:     0          5       52 0.02       12        NA      FALSE     TRUE   2.030 -0.09465558        0.09465558           NA  class</span></span>
-<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6:     0          6        2 0.04        7        NA      FALSE     TRUE   2.099 -0.09465558        0.09465558           NA  class</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>tuner <span class="ot">&lt;-</span> mlexperiments<span class="sc">::</span>MLTuneParameters<span class="sc">$</span><span class="fu">new</span>(</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  <span class="at">learner =</span> LearnerRpart<span class="sc">$</span><span class="fu">new</span>(),</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">strategy =</span> <span class="st">&quot;bayesian&quot;</span>,</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="at">ncores =</span> ncores,</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>  <span class="at">seed =</span> seed</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>)</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>tuner<span class="sc">$</span>parameter_grid <span class="ot">&lt;-</span> parameter_grid</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>tuner<span class="sc">$</span>parameter_bounds <span class="ot">&lt;-</span> parameter_bounds</span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>tuner<span class="sc">$</span>learner_args <span class="ot">&lt;-</span> learner_args</span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>tuner<span class="sc">$</span>optim_args <span class="ot">&lt;-</span> optim_args</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a></span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>tuner<span class="sc">$</span>split_type <span class="ot">&lt;-</span> <span class="st">&quot;stratified&quot;</span></span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>tuner<span class="sc">$</span><span class="fu">set_data</span>(</span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a>  <span class="at">x =</span> train_x,</span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a>  <span class="at">y =</span> train_y</span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a>)</span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a></span>
+<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a>tuner_results_bayesian <span class="ot">&lt;-</span> tuner<span class="sc">$</span><span class="fu">execute</span>(<span class="at">k =</span> <span class="dv">3</span>)</span>
+<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a><span class="co">#&gt; Registering parallel backend using 4 cores.</span></span>
+<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a></span>
+<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a><span class="fu">head</span>(tuner_results_bayesian)</span>
+<span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a><span class="co">#&gt;    Epoch setting_id minsplit   cp maxdepth gpUtility acqOptimum inBounds Elapsed       Score metric_optim_mean errorMessage method</span></span>
+<span id="cb8-27"><a href="#cb8-27" tabindex="-1"></a><span class="co">#&gt; 1:     0          1        2 0.07       22        NA      FALSE     TRUE   2.108 -0.09465558        0.09465558           NA  class</span></span>
+<span id="cb8-28"><a href="#cb8-28" tabindex="-1"></a><span class="co">#&gt; 2:     0          2       32 0.02       27        NA      FALSE     TRUE   2.122 -0.09465558        0.09465558           NA  class</span></span>
+<span id="cb8-29"><a href="#cb8-29" tabindex="-1"></a><span class="co">#&gt; 3:     0          3       72 0.10        7        NA      FALSE     TRUE   2.025 -0.09465558        0.09465558           NA  class</span></span>
+<span id="cb8-30"><a href="#cb8-30" tabindex="-1"></a><span class="co">#&gt; 4:     0          4       32 0.09       27        NA      FALSE     TRUE   2.258 -0.09465558        0.09465558           NA  class</span></span>
+<span id="cb8-31"><a href="#cb8-31" tabindex="-1"></a><span class="co">#&gt; 5:     0          5       52 0.02       12        NA      FALSE     TRUE   2.030 -0.09465558        0.09465558           NA  class</span></span>
+<span id="cb8-32"><a href="#cb8-32" tabindex="-1"></a><span class="co">#&gt; 6:     0          6        2 0.04        7        NA      FALSE     TRUE   2.099 -0.09465558        0.09465558           NA  class</span></span></code></pre></div>
 </div>
 </div>
 <div id="k-fold-cross-validation" class="section level2">
 <h2>k-Fold Cross Validation</h2>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>validator <span class="ot">&lt;-</span> mlexperiments<span class="sc">::</span>MLCrossValidation<span class="sc">$</span><span class="fu">new</span>(</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">learner =</span> LearnerRpart<span class="sc">$</span><span class="fu">new</span>(),</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">fold_list =</span> fold_list,</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">ncores =</span> ncores,</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">seed =</span> seed</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>learner_args <span class="ot">&lt;-</span> tuner<span class="sc">$</span>results<span class="sc">$</span>best.setting[<span class="sc">-</span><span class="dv">1</span>]</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>predict_args <span class="ot">&lt;-</span> predict_args</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>performance_metric <span class="ot">&lt;-</span> performance_metric</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>performance_metric_args <span class="ot">&lt;-</span> performance_metric_args</span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>return_models <span class="ot">&lt;-</span> return_models</span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span><span class="fu">set_data</span>(</span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> train_x,</span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> train_y</span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>validator_results <span class="ot">&lt;-</span> validator<span class="sc">$</span><span class="fu">execute</span>()</span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; CV fold: Fold1</span></span>
-<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; CV fold: Fold2</span></span>
-<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; CV progress [====================================================================&gt;-----------------------------------] 2/3 ( 67%)</span></span>
-<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; CV fold: Fold3</span></span>
-<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; CV progress [========================================================================================================] 3/3 (100%)</span></span>
-<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                                                                                                                                   </span></span>
-<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(validator_results)</span>
-<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     fold performance minsplit   cp maxdepth method</span></span>
-<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1: Fold1   0.8950174        2 0.07       22  class</span></span>
-<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2: Fold2   0.8978974        2 0.07       22  class</span></span>
-<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3: Fold3   0.8917513        2 0.07       22  class</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>validator <span class="ot">&lt;-</span> mlexperiments<span class="sc">::</span>MLCrossValidation<span class="sc">$</span><span class="fu">new</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  <span class="at">learner =</span> LearnerRpart<span class="sc">$</span><span class="fu">new</span>(),</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">fold_list =</span> fold_list,</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="at">ncores =</span> ncores,</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  <span class="at">seed =</span> seed</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>)</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>validator<span class="sc">$</span>learner_args <span class="ot">&lt;-</span> tuner<span class="sc">$</span>results<span class="sc">$</span>best.setting[<span class="sc">-</span><span class="dv">1</span>]</span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>validator<span class="sc">$</span>predict_args <span class="ot">&lt;-</span> predict_args</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>validator<span class="sc">$</span>performance_metric <span class="ot">&lt;-</span> performance_metric</span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>validator<span class="sc">$</span>performance_metric_args <span class="ot">&lt;-</span> performance_metric_args</span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>validator<span class="sc">$</span>return_models <span class="ot">&lt;-</span> return_models</span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a></span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a>validator<span class="sc">$</span><span class="fu">set_data</span>(</span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a>  <span class="at">x =</span> train_x,</span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a>  <span class="at">y =</span> train_y</span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a>)</span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a></span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a>validator_results <span class="ot">&lt;-</span> validator<span class="sc">$</span><span class="fu">execute</span>()</span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a><span class="co">#&gt; CV fold: Fold1</span></span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a><span class="co">#&gt; CV fold: Fold2</span></span>
+<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a><span class="co">#&gt; CV progress [====================================================================&gt;-----------------------------------] 2/3 ( 67%)</span></span>
+<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a><span class="co">#&gt; CV fold: Fold3</span></span>
+<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a><span class="co">#&gt; CV progress [========================================================================================================] 3/3 (100%)</span></span>
+<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a><span class="co">#&gt;                                                                                                                                   </span></span>
+<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a></span>
+<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a><span class="fu">head</span>(validator_results)</span>
+<span id="cb9-32"><a href="#cb9-32" tabindex="-1"></a><span class="co">#&gt;     fold performance minsplit   cp maxdepth method</span></span>
+<span id="cb9-33"><a href="#cb9-33" tabindex="-1"></a><span class="co">#&gt; 1: Fold1   0.8950174        2 0.07       22  class</span></span>
+<span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a><span class="co">#&gt; 2: Fold2   0.8978974        2 0.07       22  class</span></span>
+<span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a><span class="co">#&gt; 3: Fold3   0.8917513        2 0.07       22  class</span></span></code></pre></div>
 </div>
 <div id="nested-cross-validation" class="section level2">
 <h2>Nested Cross Validation</h2>
 <div id="inner-grid-search" class="section level3">
 <h3>Inner Grid Search</h3>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>validator <span class="ot">&lt;-</span> mlexperiments<span class="sc">::</span>MLNestedCV<span class="sc">$</span><span class="fu">new</span>(</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">learner =</span> LearnerRpart<span class="sc">$</span><span class="fu">new</span>(),</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">strategy =</span> <span class="st">&quot;grid&quot;</span>,</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">fold_list =</span> fold_list,</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">k_tuning =</span> 3L,</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">ncores =</span> ncores,</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">seed =</span> seed</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>parameter_grid <span class="ot">&lt;-</span> parameter_grid</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>learner_args <span class="ot">&lt;-</span> learner_args</span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>split_type <span class="ot">&lt;-</span> <span class="st">&quot;stratified&quot;</span></span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>predict_args <span class="ot">&lt;-</span> predict_args</span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>performance_metric <span class="ot">&lt;-</span> performance_metric</span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>performance_metric_args <span class="ot">&lt;-</span> performance_metric_args</span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>return_models <span class="ot">&lt;-</span> return_models</span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span><span class="fu">set_data</span>(</span>
-<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> train_x,</span>
-<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> train_y</span>
-<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>validator_results <span class="ot">&lt;-</span> validator<span class="sc">$</span><span class="fu">execute</span>()</span>
-<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; CV fold: Fold1</span></span>
-<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [==================&gt;-----------------------------------------------------------------------------] 2/10 ( 20%)</span></span>
-<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [============================&gt;-------------------------------------------------------------------] 3/10 ( 30%)</span></span>
-<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=====================================&gt;----------------------------------------------------------] 4/10 ( 40%)</span></span>
-<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [===============================================&gt;------------------------------------------------] 5/10 ( 50%)</span></span>
-<span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-41"><a href="#cb10-41" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-42"><a href="#cb10-42" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=========================================================&gt;--------------------------------------] 6/10 ( 60%)</span></span>
-<span id="cb10-43"><a href="#cb10-43" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-44"><a href="#cb10-44" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-45"><a href="#cb10-45" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [==================================================================&gt;-----------------------------] 7/10 ( 70%)</span></span>
-<span id="cb10-46"><a href="#cb10-46" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-47"><a href="#cb10-47" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-48"><a href="#cb10-48" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [============================================================================&gt;-------------------] 8/10 ( 80%)</span></span>
-<span id="cb10-49"><a href="#cb10-49" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-50"><a href="#cb10-50" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-51"><a href="#cb10-51" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=====================================================================================&gt;----------] 9/10 ( 90%)</span></span>
-<span id="cb10-52"><a href="#cb10-52" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-53"><a href="#cb10-53" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-54"><a href="#cb10-54" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [===============================================================================================] 10/10 (100%)                                                                                                                                  </span></span>
-<span id="cb10-55"><a href="#cb10-55" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-56"><a href="#cb10-56" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-57"><a href="#cb10-57" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; CV fold: Fold2</span></span>
-<span id="cb10-58"><a href="#cb10-58" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; CV progress [====================================================================&gt;-----------------------------------] 2/3 ( 67%)</span></span>
-<span id="cb10-59"><a href="#cb10-59" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-60"><a href="#cb10-60" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-61"><a href="#cb10-61" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-62"><a href="#cb10-62" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [==================&gt;-----------------------------------------------------------------------------] 2/10 ( 20%)</span></span>
-<span id="cb10-63"><a href="#cb10-63" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-64"><a href="#cb10-64" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-65"><a href="#cb10-65" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [============================&gt;-------------------------------------------------------------------] 3/10 ( 30%)</span></span>
-<span id="cb10-66"><a href="#cb10-66" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-67"><a href="#cb10-67" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-68"><a href="#cb10-68" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=====================================&gt;----------------------------------------------------------] 4/10 ( 40%)</span></span>
-<span id="cb10-69"><a href="#cb10-69" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-70"><a href="#cb10-70" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-71"><a href="#cb10-71" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [===============================================&gt;------------------------------------------------] 5/10 ( 50%)</span></span>
-<span id="cb10-72"><a href="#cb10-72" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-73"><a href="#cb10-73" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-74"><a href="#cb10-74" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=========================================================&gt;--------------------------------------] 6/10 ( 60%)</span></span>
-<span id="cb10-75"><a href="#cb10-75" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-76"><a href="#cb10-76" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-77"><a href="#cb10-77" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [==================================================================&gt;-----------------------------] 7/10 ( 70%)</span></span>
-<span id="cb10-78"><a href="#cb10-78" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-79"><a href="#cb10-79" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-80"><a href="#cb10-80" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [============================================================================&gt;-------------------] 8/10 ( 80%)</span></span>
-<span id="cb10-81"><a href="#cb10-81" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-82"><a href="#cb10-82" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-83"><a href="#cb10-83" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=====================================================================================&gt;----------] 9/10 ( 90%)</span></span>
-<span id="cb10-84"><a href="#cb10-84" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-85"><a href="#cb10-85" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-86"><a href="#cb10-86" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [===============================================================================================] 10/10 (100%)                                                                                                                                  </span></span>
-<span id="cb10-87"><a href="#cb10-87" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-88"><a href="#cb10-88" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-89"><a href="#cb10-89" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; CV fold: Fold3</span></span>
-<span id="cb10-90"><a href="#cb10-90" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; CV progress [========================================================================================================] 3/3 (100%)</span></span>
-<span id="cb10-91"><a href="#cb10-91" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                                                                                                                                   </span></span>
-<span id="cb10-92"><a href="#cb10-92" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-93"><a href="#cb10-93" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-94"><a href="#cb10-94" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [==================&gt;-----------------------------------------------------------------------------] 2/10 ( 20%)</span></span>
-<span id="cb10-95"><a href="#cb10-95" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-96"><a href="#cb10-96" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-97"><a href="#cb10-97" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [============================&gt;-------------------------------------------------------------------] 3/10 ( 30%)</span></span>
-<span id="cb10-98"><a href="#cb10-98" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-99"><a href="#cb10-99" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-100"><a href="#cb10-100" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=====================================&gt;----------------------------------------------------------] 4/10 ( 40%)</span></span>
-<span id="cb10-101"><a href="#cb10-101" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-102"><a href="#cb10-102" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-103"><a href="#cb10-103" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [===============================================&gt;------------------------------------------------] 5/10 ( 50%)</span></span>
-<span id="cb10-104"><a href="#cb10-104" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-105"><a href="#cb10-105" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-106"><a href="#cb10-106" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=========================================================&gt;--------------------------------------] 6/10 ( 60%)</span></span>
-<span id="cb10-107"><a href="#cb10-107" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-108"><a href="#cb10-108" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-109"><a href="#cb10-109" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [==================================================================&gt;-----------------------------] 7/10 ( 70%)</span></span>
-<span id="cb10-110"><a href="#cb10-110" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-111"><a href="#cb10-111" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-112"><a href="#cb10-112" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [============================================================================&gt;-------------------] 8/10 ( 80%)</span></span>
-<span id="cb10-113"><a href="#cb10-113" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-114"><a href="#cb10-114" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-115"><a href="#cb10-115" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=====================================================================================&gt;----------] 9/10 ( 90%)</span></span>
-<span id="cb10-116"><a href="#cb10-116" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-117"><a href="#cb10-117" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-118"><a href="#cb10-118" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Parameter settings [===============================================================================================] 10/10 (100%)                                                                                                                                  </span></span>
-<span id="cb10-119"><a href="#cb10-119" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
-<span id="cb10-120"><a href="#cb10-120" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-121"><a href="#cb10-121" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(validator_results)</span>
-<span id="cb10-122"><a href="#cb10-122" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     fold performance minsplit   cp maxdepth method</span></span>
-<span id="cb10-123"><a href="#cb10-123" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1: Fold1   0.8950174        2 0.07       22  class</span></span>
-<span id="cb10-124"><a href="#cb10-124" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2: Fold2   0.8978974        2 0.07       22  class</span></span>
-<span id="cb10-125"><a href="#cb10-125" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3: Fold3   0.8917513        2 0.07       22  class</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>validator <span class="ot">&lt;-</span> mlexperiments<span class="sc">::</span>MLNestedCV<span class="sc">$</span><span class="fu">new</span>(</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>  <span class="at">learner =</span> LearnerRpart<span class="sc">$</span><span class="fu">new</span>(),</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>  <span class="at">strategy =</span> <span class="st">&quot;grid&quot;</span>,</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>  <span class="at">fold_list =</span> fold_list,</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>  <span class="at">k_tuning =</span> 3L,</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>  <span class="at">ncores =</span> ncores,</span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>  <span class="at">seed =</span> seed</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>)</span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a>validator<span class="sc">$</span>parameter_grid <span class="ot">&lt;-</span> parameter_grid</span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>validator<span class="sc">$</span>learner_args <span class="ot">&lt;-</span> learner_args</span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>validator<span class="sc">$</span>split_type <span class="ot">&lt;-</span> <span class="st">&quot;stratified&quot;</span></span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a></span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>validator<span class="sc">$</span>predict_args <span class="ot">&lt;-</span> predict_args</span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a>validator<span class="sc">$</span>performance_metric <span class="ot">&lt;-</span> performance_metric</span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a>validator<span class="sc">$</span>performance_metric_args <span class="ot">&lt;-</span> performance_metric_args</span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a>validator<span class="sc">$</span>return_models <span class="ot">&lt;-</span> return_models</span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a></span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a>validator<span class="sc">$</span><span class="fu">set_data</span>(</span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a>  <span class="at">x =</span> train_x,</span>
+<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a>  <span class="at">y =</span> train_y</span>
+<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a>)</span>
+<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a></span>
+<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a>validator_results <span class="ot">&lt;-</span> validator<span class="sc">$</span><span class="fu">execute</span>()</span>
+<span id="cb10-25"><a href="#cb10-25" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-26"><a href="#cb10-26" tabindex="-1"></a><span class="co">#&gt; CV fold: Fold1</span></span>
+<span id="cb10-27"><a href="#cb10-27" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-28"><a href="#cb10-28" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-29"><a href="#cb10-29" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-30"><a href="#cb10-30" tabindex="-1"></a><span class="co">#&gt; Parameter settings [==================&gt;-----------------------------------------------------------------------------] 2/10 ( 20%)</span></span>
+<span id="cb10-31"><a href="#cb10-31" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-32"><a href="#cb10-32" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-33"><a href="#cb10-33" tabindex="-1"></a><span class="co">#&gt; Parameter settings [============================&gt;-------------------------------------------------------------------] 3/10 ( 30%)</span></span>
+<span id="cb10-34"><a href="#cb10-34" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-35"><a href="#cb10-35" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-36"><a href="#cb10-36" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=====================================&gt;----------------------------------------------------------] 4/10 ( 40%)</span></span>
+<span id="cb10-37"><a href="#cb10-37" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-38"><a href="#cb10-38" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-39"><a href="#cb10-39" tabindex="-1"></a><span class="co">#&gt; Parameter settings [===============================================&gt;------------------------------------------------] 5/10 ( 50%)</span></span>
+<span id="cb10-40"><a href="#cb10-40" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-41"><a href="#cb10-41" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-42"><a href="#cb10-42" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=========================================================&gt;--------------------------------------] 6/10 ( 60%)</span></span>
+<span id="cb10-43"><a href="#cb10-43" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-44"><a href="#cb10-44" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-45"><a href="#cb10-45" tabindex="-1"></a><span class="co">#&gt; Parameter settings [==================================================================&gt;-----------------------------] 7/10 ( 70%)</span></span>
+<span id="cb10-46"><a href="#cb10-46" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-47"><a href="#cb10-47" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-48"><a href="#cb10-48" tabindex="-1"></a><span class="co">#&gt; Parameter settings [============================================================================&gt;-------------------] 8/10 ( 80%)</span></span>
+<span id="cb10-49"><a href="#cb10-49" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-50"><a href="#cb10-50" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-51"><a href="#cb10-51" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=====================================================================================&gt;----------] 9/10 ( 90%)</span></span>
+<span id="cb10-52"><a href="#cb10-52" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-53"><a href="#cb10-53" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-54"><a href="#cb10-54" tabindex="-1"></a><span class="co">#&gt; Parameter settings [===============================================================================================] 10/10 (100%)                                                                                                                                  </span></span>
+<span id="cb10-55"><a href="#cb10-55" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-56"><a href="#cb10-56" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-57"><a href="#cb10-57" tabindex="-1"></a><span class="co">#&gt; CV fold: Fold2</span></span>
+<span id="cb10-58"><a href="#cb10-58" tabindex="-1"></a><span class="co">#&gt; CV progress [====================================================================&gt;-----------------------------------] 2/3 ( 67%)</span></span>
+<span id="cb10-59"><a href="#cb10-59" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-60"><a href="#cb10-60" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-61"><a href="#cb10-61" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-62"><a href="#cb10-62" tabindex="-1"></a><span class="co">#&gt; Parameter settings [==================&gt;-----------------------------------------------------------------------------] 2/10 ( 20%)</span></span>
+<span id="cb10-63"><a href="#cb10-63" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-64"><a href="#cb10-64" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-65"><a href="#cb10-65" tabindex="-1"></a><span class="co">#&gt; Parameter settings [============================&gt;-------------------------------------------------------------------] 3/10 ( 30%)</span></span>
+<span id="cb10-66"><a href="#cb10-66" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-67"><a href="#cb10-67" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-68"><a href="#cb10-68" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=====================================&gt;----------------------------------------------------------] 4/10 ( 40%)</span></span>
+<span id="cb10-69"><a href="#cb10-69" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-70"><a href="#cb10-70" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-71"><a href="#cb10-71" tabindex="-1"></a><span class="co">#&gt; Parameter settings [===============================================&gt;------------------------------------------------] 5/10 ( 50%)</span></span>
+<span id="cb10-72"><a href="#cb10-72" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-73"><a href="#cb10-73" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-74"><a href="#cb10-74" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=========================================================&gt;--------------------------------------] 6/10 ( 60%)</span></span>
+<span id="cb10-75"><a href="#cb10-75" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-76"><a href="#cb10-76" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-77"><a href="#cb10-77" tabindex="-1"></a><span class="co">#&gt; Parameter settings [==================================================================&gt;-----------------------------] 7/10 ( 70%)</span></span>
+<span id="cb10-78"><a href="#cb10-78" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-79"><a href="#cb10-79" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-80"><a href="#cb10-80" tabindex="-1"></a><span class="co">#&gt; Parameter settings [============================================================================&gt;-------------------] 8/10 ( 80%)</span></span>
+<span id="cb10-81"><a href="#cb10-81" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-82"><a href="#cb10-82" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-83"><a href="#cb10-83" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=====================================================================================&gt;----------] 9/10 ( 90%)</span></span>
+<span id="cb10-84"><a href="#cb10-84" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-85"><a href="#cb10-85" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-86"><a href="#cb10-86" tabindex="-1"></a><span class="co">#&gt; Parameter settings [===============================================================================================] 10/10 (100%)                                                                                                                                  </span></span>
+<span id="cb10-87"><a href="#cb10-87" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-88"><a href="#cb10-88" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-89"><a href="#cb10-89" tabindex="-1"></a><span class="co">#&gt; CV fold: Fold3</span></span>
+<span id="cb10-90"><a href="#cb10-90" tabindex="-1"></a><span class="co">#&gt; CV progress [========================================================================================================] 3/3 (100%)</span></span>
+<span id="cb10-91"><a href="#cb10-91" tabindex="-1"></a><span class="co">#&gt;                                                                                                                                   </span></span>
+<span id="cb10-92"><a href="#cb10-92" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-93"><a href="#cb10-93" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-94"><a href="#cb10-94" tabindex="-1"></a><span class="co">#&gt; Parameter settings [==================&gt;-----------------------------------------------------------------------------] 2/10 ( 20%)</span></span>
+<span id="cb10-95"><a href="#cb10-95" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-96"><a href="#cb10-96" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-97"><a href="#cb10-97" tabindex="-1"></a><span class="co">#&gt; Parameter settings [============================&gt;-------------------------------------------------------------------] 3/10 ( 30%)</span></span>
+<span id="cb10-98"><a href="#cb10-98" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-99"><a href="#cb10-99" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-100"><a href="#cb10-100" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=====================================&gt;----------------------------------------------------------] 4/10 ( 40%)</span></span>
+<span id="cb10-101"><a href="#cb10-101" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-102"><a href="#cb10-102" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-103"><a href="#cb10-103" tabindex="-1"></a><span class="co">#&gt; Parameter settings [===============================================&gt;------------------------------------------------] 5/10 ( 50%)</span></span>
+<span id="cb10-104"><a href="#cb10-104" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-105"><a href="#cb10-105" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-106"><a href="#cb10-106" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=========================================================&gt;--------------------------------------] 6/10 ( 60%)</span></span>
+<span id="cb10-107"><a href="#cb10-107" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-108"><a href="#cb10-108" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-109"><a href="#cb10-109" tabindex="-1"></a><span class="co">#&gt; Parameter settings [==================================================================&gt;-----------------------------] 7/10 ( 70%)</span></span>
+<span id="cb10-110"><a href="#cb10-110" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-111"><a href="#cb10-111" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-112"><a href="#cb10-112" tabindex="-1"></a><span class="co">#&gt; Parameter settings [============================================================================&gt;-------------------] 8/10 ( 80%)</span></span>
+<span id="cb10-113"><a href="#cb10-113" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-114"><a href="#cb10-114" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-115"><a href="#cb10-115" tabindex="-1"></a><span class="co">#&gt; Parameter settings [=====================================================================================&gt;----------] 9/10 ( 90%)</span></span>
+<span id="cb10-116"><a href="#cb10-116" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-117"><a href="#cb10-117" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-118"><a href="#cb10-118" tabindex="-1"></a><span class="co">#&gt; Parameter settings [===============================================================================================] 10/10 (100%)                                                                                                                                  </span></span>
+<span id="cb10-119"><a href="#cb10-119" tabindex="-1"></a><span class="co">#&gt;  Classification: using &#39;classification error rate&#39; as optimization metric.</span></span>
+<span id="cb10-120"><a href="#cb10-120" tabindex="-1"></a></span>
+<span id="cb10-121"><a href="#cb10-121" tabindex="-1"></a><span class="fu">head</span>(validator_results)</span>
+<span id="cb10-122"><a href="#cb10-122" tabindex="-1"></a><span class="co">#&gt;     fold performance minsplit   cp maxdepth method</span></span>
+<span id="cb10-123"><a href="#cb10-123" tabindex="-1"></a><span class="co">#&gt; 1: Fold1   0.8950174        2 0.07       22  class</span></span>
+<span id="cb10-124"><a href="#cb10-124" tabindex="-1"></a><span class="co">#&gt; 2: Fold2   0.8978974        2 0.07       22  class</span></span>
+<span id="cb10-125"><a href="#cb10-125" tabindex="-1"></a><span class="co">#&gt; 3: Fold3   0.8917513        2 0.07       22  class</span></span></code></pre></div>
 </div>
 <div id="inner-bayesian-optimization" class="section level3">
 <h3>Inner Bayesian Optimization</h3>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>validator <span class="ot">&lt;-</span> mlexperiments<span class="sc">::</span>MLNestedCV<span class="sc">$</span><span class="fu">new</span>(</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">learner =</span> LearnerRpart<span class="sc">$</span><span class="fu">new</span>(),</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">strategy =</span> <span class="st">&quot;bayesian&quot;</span>,</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">fold_list =</span> fold_list,</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">k_tuning =</span> 3L,</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">ncores =</span> ncores,</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">seed =</span> seed</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>parameter_grid <span class="ot">&lt;-</span> parameter_grid</span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>learner_args <span class="ot">&lt;-</span> learner_args</span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>split_type <span class="ot">&lt;-</span> <span class="st">&quot;stratified&quot;</span></span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>parameter_bounds <span class="ot">&lt;-</span> parameter_bounds</span>
-<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>optim_args <span class="ot">&lt;-</span> optim_args</span>
-<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>predict_args <span class="ot">&lt;-</span> predict_args</span>
-<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>performance_metric <span class="ot">&lt;-</span> performance_metric</span>
-<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>performance_metric_args <span class="ot">&lt;-</span> performance_metric_args</span>
-<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span>return_models <span class="ot">&lt;-</span> return_models</span>
-<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>validator<span class="sc">$</span><span class="fu">set_data</span>(</span>
-<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> train_x,</span>
-<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> train_y</span>
-<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>validator_results <span class="ot">&lt;-</span> validator<span class="sc">$</span><span class="fu">execute</span>()</span>
-<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; CV fold: Fold1</span></span>
-<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Registering parallel backend using 4 cores.</span></span>
-<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; CV fold: Fold2</span></span>
-<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; CV progress [====================================================================&gt;-----------------------------------] 2/3 ( 67%)</span></span>
-<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Registering parallel backend using 4 cores.</span></span>
-<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; CV fold: Fold3</span></span>
-<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; CV progress [========================================================================================================] 3/3 (100%)</span></span>
-<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                                                                                                                                   </span></span>
-<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Registering parallel backend using 4 cores.</span></span>
-<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(validator_results)</span>
-<span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     fold performance minsplit   cp maxdepth method</span></span>
-<span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1: Fold1   0.8950174        2 0.07       22  class</span></span>
-<span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2: Fold2   0.8978974        2 0.07       22  class</span></span>
-<span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3: Fold3   0.8917513        2 0.07       22  class</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>validator <span class="ot">&lt;-</span> mlexperiments<span class="sc">::</span>MLNestedCV<span class="sc">$</span><span class="fu">new</span>(</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>  <span class="at">learner =</span> LearnerRpart<span class="sc">$</span><span class="fu">new</span>(),</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>  <span class="at">strategy =</span> <span class="st">&quot;bayesian&quot;</span>,</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>  <span class="at">fold_list =</span> fold_list,</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>  <span class="at">k_tuning =</span> 3L,</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>  <span class="at">ncores =</span> ncores,</span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>  <span class="at">seed =</span> seed</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>)</span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>validator<span class="sc">$</span>parameter_grid <span class="ot">&lt;-</span> parameter_grid</span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>validator<span class="sc">$</span>learner_args <span class="ot">&lt;-</span> learner_args</span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a>validator<span class="sc">$</span>split_type <span class="ot">&lt;-</span> <span class="st">&quot;stratified&quot;</span></span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a></span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a></span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a>validator<span class="sc">$</span>parameter_bounds <span class="ot">&lt;-</span> parameter_bounds</span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a>validator<span class="sc">$</span>optim_args <span class="ot">&lt;-</span> optim_args</span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a></span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a>validator<span class="sc">$</span>predict_args <span class="ot">&lt;-</span> predict_args</span>
+<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a>validator<span class="sc">$</span>performance_metric <span class="ot">&lt;-</span> performance_metric</span>
+<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a>validator<span class="sc">$</span>performance_metric_args <span class="ot">&lt;-</span> performance_metric_args</span>
+<span id="cb11-21"><a href="#cb11-21" tabindex="-1"></a>validator<span class="sc">$</span>return_models <span class="ot">&lt;-</span> return_models</span>
+<span id="cb11-22"><a href="#cb11-22" tabindex="-1"></a></span>
+<span id="cb11-23"><a href="#cb11-23" tabindex="-1"></a>validator<span class="sc">$</span><span class="fu">set_data</span>(</span>
+<span id="cb11-24"><a href="#cb11-24" tabindex="-1"></a>  <span class="at">x =</span> train_x,</span>
+<span id="cb11-25"><a href="#cb11-25" tabindex="-1"></a>  <span class="at">y =</span> train_y</span>
+<span id="cb11-26"><a href="#cb11-26" tabindex="-1"></a>)</span>
+<span id="cb11-27"><a href="#cb11-27" tabindex="-1"></a></span>
+<span id="cb11-28"><a href="#cb11-28" tabindex="-1"></a>validator_results <span class="ot">&lt;-</span> validator<span class="sc">$</span><span class="fu">execute</span>()</span>
+<span id="cb11-29"><a href="#cb11-29" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb11-30"><a href="#cb11-30" tabindex="-1"></a><span class="co">#&gt; CV fold: Fold1</span></span>
+<span id="cb11-31"><a href="#cb11-31" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb11-32"><a href="#cb11-32" tabindex="-1"></a><span class="co">#&gt; Registering parallel backend using 4 cores.</span></span>
+<span id="cb11-33"><a href="#cb11-33" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb11-34"><a href="#cb11-34" tabindex="-1"></a><span class="co">#&gt; CV fold: Fold2</span></span>
+<span id="cb11-35"><a href="#cb11-35" tabindex="-1"></a><span class="co">#&gt; CV progress [====================================================================&gt;-----------------------------------] 2/3 ( 67%)</span></span>
+<span id="cb11-36"><a href="#cb11-36" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb11-37"><a href="#cb11-37" tabindex="-1"></a><span class="co">#&gt; Registering parallel backend using 4 cores.</span></span>
+<span id="cb11-38"><a href="#cb11-38" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb11-39"><a href="#cb11-39" tabindex="-1"></a><span class="co">#&gt; CV fold: Fold3</span></span>
+<span id="cb11-40"><a href="#cb11-40" tabindex="-1"></a><span class="co">#&gt; CV progress [========================================================================================================] 3/3 (100%)</span></span>
+<span id="cb11-41"><a href="#cb11-41" tabindex="-1"></a><span class="co">#&gt;                                                                                                                                   </span></span>
+<span id="cb11-42"><a href="#cb11-42" tabindex="-1"></a><span class="co">#&gt; Registering parallel backend using 4 cores.</span></span>
+<span id="cb11-43"><a href="#cb11-43" tabindex="-1"></a></span>
+<span id="cb11-44"><a href="#cb11-44" tabindex="-1"></a><span class="fu">head</span>(validator_results)</span>
+<span id="cb11-45"><a href="#cb11-45" tabindex="-1"></a><span class="co">#&gt;     fold performance minsplit   cp maxdepth method</span></span>
+<span id="cb11-46"><a href="#cb11-46" tabindex="-1"></a><span class="co">#&gt; 1: Fold1   0.8950174        2 0.07       22  class</span></span>
+<span id="cb11-47"><a href="#cb11-47" tabindex="-1"></a><span class="co">#&gt; 2: Fold2   0.8978974        2 0.07       22  class</span></span>
+<span id="cb11-48"><a href="#cb11-48" tabindex="-1"></a><span class="co">#&gt; 3: Fold3   0.8917513        2 0.07       22  class</span></span></code></pre></div>
 </div>
 </div>
 </div>

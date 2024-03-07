@@ -1,4 +1,4 @@
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   eval = FALSE,
@@ -467,7 +467,7 @@ knitr::opts_chunk$set(
 #  )
 #  p
 
-## ---- include=FALSE-----------------------------------------------------------
+## ----include=FALSE------------------------------------------------------------
 #  ggplot2::ggsave(
 #    filename = "rpart_chart_reg.png",
 #    plot = p,
