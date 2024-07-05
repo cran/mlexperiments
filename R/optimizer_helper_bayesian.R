@@ -133,6 +133,11 @@
     FUN = is.expression,
     FUN.VALUE = logical(1L)
   )
+
+  # remove case_weights from params, otherwise displaying is very strange
+  if ("case_weights" %in% names(self$learner_args)) {
+    exl_cols["case_weights"] <- TRUE
+  }
   optim_results <- cbind(
       data.table::as.data.table(object$scoreSummary),
       data.table::as.data.table(

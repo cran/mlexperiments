@@ -4,7 +4,7 @@
     train_index,
     fold_train,
     fold_test
-  ) {
+) {
 
   hparam_tuner <- MLTuneParameters$new(
     learner = self$learner,
@@ -17,6 +17,14 @@
     private$method_helper$execute_params$parameter_grid
   hparam_tuner$learner_args <-
     private$method_helper$execute_params$params_not_optimized
+
+  if ("case_weights" %in% names(hparam_tuner$learner_args)) {
+    hparam_tuner$learner_args$case_weights <- kdry::mlh_subset(
+      private$method_helper$execute_params$params_not_optimized$case_weights,
+      train_index
+    )
+  }
+
   hparam_tuner$optim_args <- self$optim_args
   hparam_tuner$split_type <- self$split_type
   hparam_tuner$split_vector <- self$split_vector[train_index]
@@ -38,6 +46,10 @@
   learner_args <- learner_args[!kdry::misc_duplicated_by_names(
     learner_args, fromLast = TRUE
   )]
+
+  if ("case_weights" %in% names(learner_args)) {
+    learner_args$case_weights <- NULL
+  }
 
   self$learner_args <- learner_args
 

@@ -1,9 +1,30 @@
-## ----setup--------------------------------------------------------------------
+---
+title: "rpart: Multiclass Classification"
+vignette: >
+  %\VignetteEncoding{UTF-8}
+  %\VignetteIndexEntry{rpart: Multiclass Classification}
+  %\VignetteEngine{quarto::html}
+editor_options: 
+  chunk_output_type: console
+
+execute:
+  eval: false
+  collapse: true
+  comment: "#>"
+---
+
+```{r setup}
 # nolint start
 library(mlexperiments)
+```
 
+See [https://github.com/kapsner/mlexperiments/blob/main/R/learner_rpart.R](https://github.com/kapsner/mlexperiments/blob/main/R/learner_rpart.R) for implementation details.
 
-## -----------------------------------------------------------------------------
+# Preprocessing
+
+## Import and Prepare Data
+
+```{r}
 library(mlbench)
 data("DNA")
 dataset <- DNA |>
@@ -12,9 +33,11 @@ dataset <- DNA |>
 
 feature_cols <- colnames(dataset)[1:180]
 target_col <- "Class"
+```
 
+## General Configurations
 
-## -----------------------------------------------------------------------------
+```{r}
 seed <- 123
 if (isTRUE(as.logical(Sys.getenv("_R_CHECK_LIMIT_CORES_")))) {
   # on cran
@@ -31,9 +54,11 @@ if (isTRUE(as.logical(Sys.getenv("_R_CHECK_LIMIT_CORES_")))) {
   )
 }
 options("mlexperiments.bayesian.max_init" = 10L)
+```
 
+## Generate Training- and Test Data
 
-## -----------------------------------------------------------------------------
+```{r}
 data_split <- splitTools::partition(
   y = dataset[, get(target_col)],
   p = c(train = 0.7, test = 0.3),
@@ -53,18 +78,24 @@ test_x <- model.matrix(
   dataset[data_split$test, .SD, .SDcols = feature_cols]
 )
 test_y <- dataset[data_split$test, get(target_col)]
+```
 
+## Generate Training Data Folds
 
-## -----------------------------------------------------------------------------
+```{r}
 fold_list <- splitTools::create_folds(
   y = train_y,
   k = 3,
   type = "stratified",
   seed = seed
 )
+```
 
+# Experiments
 
-## -----------------------------------------------------------------------------
+## Prepare Experiments
+
+```{r}
 # required learner arguments, not optimized
 learner_args <- list(method = "class")
 
@@ -100,9 +131,14 @@ optim_args <- list(
   kappa = 3.5,
   acq = "ucb"
 )
+```
 
 
-## -----------------------------------------------------------------------------
+## Hyperparameter Tuning
+
+### Grid Search
+
+```{r}
 tuner <- mlexperiments::MLTuneParameters$new(
   learner = LearnerRpart$new(),
   strategy = "grid",
@@ -158,9 +194,12 @@ head(tuner_results_grid)
 #> 4:          4        0.09465558       32 0.09       27  class
 #> 5:          5        0.09465558       52 0.02       12  class
 #> 6:          6        0.09465558        2 0.04        7  class
+```
 
 
-## -----------------------------------------------------------------------------
+### Bayesian Optimization
+
+```{r}
 tuner <- mlexperiments::MLTuneParameters$new(
   learner = LearnerRpart$new(),
   strategy = "bayesian",
@@ -193,9 +232,11 @@ head(tuner_results_bayesian)
 #> 4:     0          4       32 0.09       27        NA      FALSE     TRUE   2.258 -0.09465558        0.09465558           NA  class
 #> 5:     0          5       52 0.02       12        NA      FALSE     TRUE   2.030 -0.09465558        0.09465558           NA  class
 #> 6:     0          6        2 0.04        7        NA      FALSE     TRUE   2.099 -0.09465558        0.09465558           NA  class
+```
 
+## k-Fold Cross Validation
 
-## -----------------------------------------------------------------------------
+```{r}
 validator <- mlexperiments::MLCrossValidation$new(
   learner = LearnerRpart$new(),
   fold_list = fold_list,
@@ -231,9 +272,14 @@ head(validator_results)
 #> 1: Fold1   0.8950174        2 0.07       22  class
 #> 2: Fold2   0.8978974        2 0.07       22  class
 #> 3: Fold3   0.8917513        2 0.07       22  class
+```
 
 
-## -----------------------------------------------------------------------------
+## Nested Cross Validation
+
+### Inner Grid Search
+
+```{r}
 validator <- mlexperiments::MLNestedCV$new(
   learner = LearnerRpart$new(),
   strategy = "grid",
@@ -359,9 +405,12 @@ head(validator_results)
 #> 1: Fold1   0.8950174        2 0.07       22  class
 #> 2: Fold2   0.8978974        2 0.07       22  class
 #> 3: Fold3   0.8917513        2 0.07       22  class
+```
 
 
-## -----------------------------------------------------------------------------
+### Inner Bayesian Optimization
+
+```{r}
 validator <- mlexperiments::MLNestedCV$new(
   learner = LearnerRpart$new(),
   strategy = "bayesian",
@@ -410,16 +459,20 @@ head(validator_results)
 #> 1: Fold1   0.8950174        2 0.07       22  class
 #> 2: Fold2   0.8978974        2 0.07       22  class
 #> 3: Fold3   0.8917513        2 0.07       22  class
+```
 
+## Appendix I: Grid-Search with Target Weigths
 
-## -----------------------------------------------------------------------------
+Here, `rpart`'s [`weights`-argument](https://stat.ethz.ch/R-manual/R-devel/library/rpart/html/rpart.html) is used to rescale the case-weights during the training.
+
+```{r}
 # define the target weights
 y_weights <- ifelse(train_y == "n", 0.8, ifelse(train_y == "ei", 1.2, 1))
 head(y_weights)
 #> [1] 1.2 1.2 0.0 0.8 0.8 0.0
+```
 
-
-## -----------------------------------------------------------------------------
+```{r}
 tuner_w_weights <- mlexperiments::MLTuneParameters$new(
   learner = LearnerRpart$new(),
   strategy = "grid",
@@ -459,9 +512,12 @@ head(tuner_results_grid)
 #> 4:          4         0.1062916       32  0.09       27  class
 #> 5:          5         0.1062916       52  0.02       12  class
 #> 6:          6         0.1062916        2  0.04        7  class
+```
 
 
-## -----------------------------------------------------------------------------
+## Appendix II: k-Fold Cross Validation with Target Weigths
+
+```{r}
 validator <- mlexperiments::MLCrossValidation$new(
   learner = LearnerRpart$new(),
   fold_list = fold_list,
@@ -501,8 +557,8 @@ head(validator_results)
 #> 1:  Fold1   0.8812005        2  0.07       22  class
 #> 2:  Fold2   0.9129256        2  0.07       22  class
 #> 3:  Fold3   0.8800668        2  0.07       22  class
+```
 
-
-## ----include=FALSE------------------------------------------------------------
+```{r include=FALSE}
 # nolint end
-
+```

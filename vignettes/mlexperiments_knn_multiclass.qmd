@@ -1,23 +1,20 @@
 ---
 title: "KNN: Multiclass Classification"
-output: rmarkdown::html_vignette
 vignette: >
   %\VignetteEncoding{UTF-8}
   %\VignetteIndexEntry{KNN: Multiclass Classification}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{quarto::html}
 editor_options: 
   chunk_output_type: console
+
+execute:
+  eval: false
+  collapse: true
+  comment: "#>"
 ---
 
-```{r, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  eval = FALSE,
-  comment = "#>"
-)
-```
-
 ```{r setup}
+# nolint start
 library(mlexperiments)
 ```
 
@@ -380,4 +377,8 @@ head(validator_results)
 #> 1: Fold1   0.8702444 28 2   FALSE
 #> 2: Fold2   0.8396360 64 2   FALSE
 #> 3: Fold3   0.9010913 58 2   FALSE
+```
+
+```{r include=FALSE}
+# nolint end
 ```

@@ -118,17 +118,24 @@
 .cv_fit_model <- function(self, private, train_index, fold_train, fold_test) {
 
   fit_args <- list(
-      x = fold_train$x,
-      y = fold_train$y,
-      seed = private$seed,
-      ncores = private$ncores
-    )
+    x = fold_train$x,
+    y = fold_train$y,
+    seed = private$seed,
+    ncores = private$ncores
+  )
 
   if (is.list(self$learner_args)) {
 
     learner_args <- self$learner_args
     learner_args <- .method_params_refactor(learner_args, private$method_helper)
     learner_args <- .eval_params(learner_args)
+
+    if ("case_weights" %in% names(learner_args)) {
+      learner_args$case_weights <- kdry::mlh_subset(
+        private$method_helper$execute_params$params_not_optimized$case_weights, # nolint
+        train_index
+      )
+    }
 
   } else {
     learner_args <- NULL
@@ -141,7 +148,7 @@
 
   fit_args <- kdry::list.append(
     main_list = fit_args,
-    append_list = private$method_helper$execute_params["cat_vars"]
+    append_list = list(cat_vars = learner_args$cat_vars)
   )
 
   set.seed(private$seed)
@@ -154,7 +161,7 @@
       newdata = fold_test$x,
       ncores = private$ncores
     ),
-    append_list = private$method_helper$execute_params["cat_vars"]
+    append_list = list(cat_vars = learner_args$cat_vars)
   )
   pred_args <- kdry::list.append(pred_args, self$predict_args)
 

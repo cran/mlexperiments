@@ -61,6 +61,11 @@
       set.seed(private$seed)
       fit_grid <- do.call(FUN, fun_parameters)
 
+      # remove case_weights from params, otherwise displaying is very strange
+      if ("case_weights" %in% names(params)) {
+        params$case_weights <- NULL
+      }
+
       ret <- data.table::as.data.table(
         c(
           list("setting_id" = setting_id),
