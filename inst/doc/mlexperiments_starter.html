@@ -1,8 +1,7 @@
-<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.549">
+<meta name="generator" content="quarto-1.7.13">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -33,7 +32,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
 { counter-reset: source-line 0; }
@@ -240,7 +239,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; }
 <h3 id="finally-create-an-r6-class-for-the-learner">Finally, Create an R6 Class for the Learner</h3>
 <p>Finally, all of these created functions need to be integrated into a learner object. This is basically done by overwriting the placeholders in an R6 learner that inherits from <code>mlexperiments::MLLearnerBase</code>.</p>
 <p>The placeholders are:</p>
-<table>
+<table class="caption-top">
 <thead>
 <tr class="header">
 <th>Name</th>

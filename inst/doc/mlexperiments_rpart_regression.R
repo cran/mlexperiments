@@ -434,12 +434,14 @@ mlexperiments::validate_fold_equality(
 ## -----------------------------------------------------------------------------
 preds_rpart <- mlexperiments::predictions(
   object = validator,
-  newdata = test_x
+  newdata = test_x,
+  cat_vars = cat_vars
 )
 
 preds_lm <- mlexperiments::predictions(
   object = validator_lm,
-  newdata = test_x
+  newdata = test_x,
+  cat_vars = cat_vars
 )
 
 
