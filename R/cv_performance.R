@@ -51,10 +51,13 @@
 #'
 #' glm_optimization$learner_args <- list(family = binomial(link = "logit"))
 #' glm_optimization$predict_args <- list(type = "response")
-#' glm_optimization$performance_metric_args <- list(positive = "1")
+#' glm_optimization$performance_metric_args <- list(
+#'   positive = "1",
+#'   negative = "0"
+#' )
 #' glm_optimization$performance_metric <- list(
-#'   auc = metric("auc"), sensitivity = metric("sensitivity"),
-#'   specificity = metric("specificity")
+#'   auc = metric("AUC"), sensitivity = metric("TPR"),
+#'   specificity = metric("TNR")
 #' )
 #' glm_optimization$return_models <- TRUE
 #'
@@ -117,24 +120,24 @@ performance <- function(
 
   if (!is.null(type)) {
     type <- match.arg(type, c("regression", "binary"))
-    if (!requireNamespace("mlr3measures", quietly = TRUE)) {
+    if (!requireNamespace("measures", quietly = TRUE)) {
       stop(
         paste0(
-          "Package \"mlr3measures\" must be installed to use ",
+          "Package \"measures\" must be installed to use ",
           "function 'performance()'."
         ),
         call. = FALSE
       )
     }
-    if (type == "regression") {
-      append_metrics <- c(
-        "mse", "msle", "mae", "mape", "rmse", "rmsle", "rsq", "sse"
-      )
-    } else if (type == "binary") {
-      append_metrics <- c(
-        "auc", "prauc", "sensitivity", "specificity", "ppv", "npv", "tn", "tp",
-        "fn", "fp", "tnr", "tpr", "fnr", "fpr", "bbrier", "acc", "ce", "fbeta"
-      )
+    metrics_table <- .get_metrics_metadata()
+    append_metrics <- metrics_table[
+      grepl(pattern = type, x = get("task")),
+      get("function_name")
+    ] |> as.character()
+    if (type == "binary") {
+      append_metrics <- c(append_metrics, "ACC", "MMCE", "BER")
+    } else if (type == "regression") {
+      append_metrics <- setdiff(append_metrics, c("ARSQ", "MSLE", "RMSLE"))
     }
     base_metric_list <- .metric_from_char(append_metrics)
     perf_fun <- kdry::list.append(perf_fun, base_metric_list)

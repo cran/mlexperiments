@@ -55,8 +55,8 @@
 #     )
 #     set.seed(seed)
 #     cvfit <- do.call(knn_fit, args)
-#     # optimize error rate
-#     FUN <- metric("ce") # nolint
+#     # optimize mean misclassification error
+#     FUN <- metric("MMAC") # nolint
 #     err <- FUN(predictions = knn_predict(
 #       model = cvfit,
 #       newdata = kdry::mlh_subset(x, -train_idx),
@@ -294,7 +294,7 @@ best_grid_result
 knn_cv$learner_args <- best_grid_result[-1]
 
 knn_cv$predict_args <- list(type = "response")
-knn_cv$performance_metric <- metric("bacc")
+knn_cv$performance_metric <- metric("ACC")
 knn_cv$return_models <- TRUE
 
 # set data
@@ -316,9 +316,9 @@ results <- knn_cv$execute()
 
 head(results)
 #>     fold performance  k l
-#> 1: Fold1   0.8912781 68 0
-#> 2: Fold2   0.8832388 68 0
-#> 3: Fold3   0.8657147 68 0
+#> 1: Fold1   0.8926554 68 0
+#> 2: Fold2   0.8747646 68 0
+#> 3: Fold3   0.8596987 68 0
 
 
 ## -----------------------------------------------------------------------------
@@ -337,7 +337,7 @@ knn_cv_nested_bayesian$split_type <- "stratified"
 knn_cv_nested_bayesian$optim_args <- optim_args
 
 knn_cv_nested_bayesian$predict_args <- list(type = "response")
-knn_cv_nested_bayesian$performance_metric <- metric("bacc")
+knn_cv_nested_bayesian$performance_metric <- metric("ACC")
 
 # set data
 knn_cv_nested_bayesian$set_data(
@@ -363,9 +363,9 @@ results <- knn_cv_nested_bayesian$execute()
 
 head(results)
 #>     fold performance  k l
-#> 1: Fold1   0.8912781 68 0
-#> 2: Fold2   0.8832388 68 0
-#> 3: Fold3   0.8657147 68 0
+#> 1: Fold1   0.8926554 68 0
+#> 2: Fold2   0.8747646 68 0
+#> 3: Fold3   0.8596987 68 0
 
 
 ## -----------------------------------------------------------------------------
@@ -382,7 +382,7 @@ knn_cv_nested_grid$parameter_grid <- param_list_knn
 knn_cv_nested_grid$split_type <- "stratified"
 
 knn_cv_nested_grid$predict_args <- list(type = "response")
-knn_cv_nested_grid$performance_metric <- metric("bacc")
+knn_cv_nested_grid$performance_metric <- metric("ACC")
 
 # set data
 knn_cv_nested_grid$set_data(
@@ -427,9 +427,9 @@ results <- knn_cv_nested_grid$execute()
 
 head(results)
 #>     fold performance  k l
-#> 1: Fold1   0.8959736 52 0
-#> 2: Fold2   0.8832388 68 0
-#> 3: Fold3   0.8657147 68 0
+#> 1: Fold1   0.8945386 52 0
+#> 2: Fold2   0.8747646 68 0
+#> 3: Fold3   0.8596987 68 0
 
 
 ## ----include=FALSE------------------------------------------------------------

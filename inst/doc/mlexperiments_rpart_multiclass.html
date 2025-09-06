@@ -1,7 +1,8 @@
+<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.7.13">
+<meta name="generator" content="quarto-1.5.57">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -177,7 +178,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; }
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co"># required for mlexperiments::MLCrossValidation and</span></span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co"># mlexperiments::MLNestedCV</span></span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>predict_args <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">type =</span> <span class="st">&quot;class&quot;</span>)</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>performance_metric <span class="ot">&lt;-</span> <span class="fu">metric</span>(<span class="st">&quot;bacc&quot;</span>)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>performance_metric <span class="ot">&lt;-</span> <span class="fu">metric</span>(<span class="st">&quot;ACC&quot;</span>)</span>
 <span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>performance_metric_args <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
 <span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>return_models <span class="ot">&lt;-</span> <span class="cn">FALSE</span></span>
 <span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
@@ -334,9 +335,9 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; }
 <span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(validator_results)</span>
 <span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     fold performance minsplit   cp maxdepth method</span></span>
-<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1: Fold1   0.8950174        2 0.07       22  class</span></span>
-<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2: Fold2   0.8978974        2 0.07       22  class</span></span>
-<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3: Fold3   0.8917513        2 0.07       22  class</span></span></code></pre></div>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1: Fold1   0.9018817        2 0.07       22  class</span></span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2: Fold2   0.9095816        2 0.07       22  class</span></span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3: Fold3   0.9045699        2 0.07       22  class</span></span></code></pre></div>
 </div>
 <h2 id="nested-cross-validation">Nested Cross Validation</h2>
 <h3 id="inner-grid-search">Inner Grid Search</h3>
@@ -463,9 +464,9 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; }
 <span id="cb10-120"><a href="#cb10-120" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-121"><a href="#cb10-121" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(validator_results)</span>
 <span id="cb10-122"><a href="#cb10-122" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     fold performance minsplit   cp maxdepth method</span></span>
-<span id="cb10-123"><a href="#cb10-123" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1: Fold1   0.8950174        2 0.07       22  class</span></span>
-<span id="cb10-124"><a href="#cb10-124" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2: Fold2   0.8978974        2 0.07       22  class</span></span>
-<span id="cb10-125"><a href="#cb10-125" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3: Fold3   0.8917513        2 0.07       22  class</span></span></code></pre></div>
+<span id="cb10-123"><a href="#cb10-123" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1: Fold1   0.9018817        2 0.07       22  class</span></span>
+<span id="cb10-124"><a href="#cb10-124" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2: Fold2   0.9095816        2 0.07       22  class</span></span>
+<span id="cb10-125"><a href="#cb10-125" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3: Fold3   0.9045699        2 0.07       22  class</span></span></code></pre></div>
 </div>
 <h3 id="inner-bayesian-optimization">Inner Bayesian Optimization</h3>
 <div class="cell">
@@ -514,9 +515,9 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; }
 <span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(validator_results)</span>
 <span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     fold performance minsplit   cp maxdepth method</span></span>
-<span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1: Fold1   0.8950174        2 0.07       22  class</span></span>
-<span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2: Fold2   0.8978974        2 0.07       22  class</span></span>
-<span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3: Fold3   0.8917513        2 0.07       22  class</span></span></code></pre></div>
+<span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1: Fold1   0.9018817        2 0.07       22  class</span></span>
+<span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2: Fold2   0.9095816        2 0.07       22  class</span></span>
+<span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3: Fold3   0.9045699        2 0.07       22  class</span></span></code></pre></div>
 </div>
 <h2 id="appendix-i-grid-search-with-target-weigths">Appendix I: Grid-Search with Target Weigths</h2>
 <p>Here, <code>rpart</code>’s <a href="https://stat.ethz.ch/R-manual/R-devel/library/rpart/html/rpart.html"><code>weights</code>-argument</a> is used to rescale the case-weights during the training.</p>
@@ -605,9 +606,9 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; }
 <span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(validator_results)</span>
 <span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;      fold performance minsplit    cp maxdepth method</span></span>
 <span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    &lt;char&gt;       &lt;num&gt;    &lt;num&gt; &lt;num&gt;    &lt;num&gt; &lt;char&gt;</span></span>
-<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1:  Fold1   0.8812005        2  0.07       22  class</span></span>
-<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2:  Fold2   0.9129256        2  0.07       22  class</span></span>
-<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3:  Fold3   0.8800668        2  0.07       22  class</span></span></code></pre></div>
+<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1:  Fold1   0.8803763        2  0.07       22  class</span></span>
+<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2:  Fold2   0.9190283        2  0.07       22  class</span></span>
+<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3:  Fold3   0.8817204        2  0.07       22  class</span></span></code></pre></div>
 </div>
 
 

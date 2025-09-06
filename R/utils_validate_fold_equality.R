@@ -41,8 +41,11 @@
 #'
 #' glm_optimization$learner_args <- list(family = binomial(link = "logit"))
 #' glm_optimization$predict_args <- list(type = "response")
-#' glm_optimization$performance_metric_args <- list(positive = "1")
-#' glm_optimization$performance_metric <- metric("auc")
+#' glm_optimization$performance_metric_args <- list(
+#'   positive = "1",
+#'   negative = "0"
+#' )
+#' glm_optimization$performance_metric <- metric("AUC")
 #' glm_optimization$return_models <- TRUE
 #'
 #' # set data
@@ -65,8 +68,11 @@
 #'   test = parse(text = "fold_test$x")
 #' )
 #' knn_optimization$predict_args <- list(type = "prob")
-#' knn_optimization$performance_metric_args <- list(positive = "1")
-#' knn_optimization$performance_metric <- metric("auc")
+#' knn_optimization$performance_metric_args <- list(
+#'   positive = "1",
+#'   negative = "0"
+#' )
+#' knn_optimization$performance_metric <- metric("AUC")
 #'
 #' # set data
 #' knn_optimization$set_data(

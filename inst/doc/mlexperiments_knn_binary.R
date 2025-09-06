@@ -76,7 +76,7 @@ learner_args <- list(
 # required for mlexperiments::MLCrossValidation and
 # mlexperiments::MLNestedCV
 predict_args <- list(type = "response")
-performance_metric <- metric("acc")
+performance_metric <- metric("ACC")
 performance_metric_args <- NULL
 return_models <- FALSE
 

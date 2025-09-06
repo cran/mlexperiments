@@ -50,10 +50,13 @@ test_that(
 
     glm_optimization$learner_args <- list(family = binomial(link = "logit"))
     glm_optimization$predict_args <- list(type = "response")
-    glm_optimization$performance_metric_args <- list(positive = "1")
+    glm_optimization$performance_metric_args <- list(
+      positive = "1",
+      negative = "0"
+    )
     glm_optimization$performance_metric <- list(
-      auc = metric("auc"), sensitivity = metric("sensitivity"),
-      specificity = metric("specificity")
+      auc = metric("AUC"), sensitivity = metric("TPR"),
+      specificity = metric("TNR")
     )
 
     # set data
@@ -105,7 +108,7 @@ test_that(
       positive = "1"
     )
 
-    expect_equal(dim(perf), c(5, 19))
+    expect_equal(dim(perf), c(5, 26))
   }
 )
 
@@ -163,7 +166,7 @@ test_that(
     )
 
     lm_optimization$predict_args <- list(type = "response")
-    lm_optimization$performance_metric <- c("rmse", "rmsle", "mse", "msle")
+    lm_optimization$performance_metric <- c("RMSE", "RMSLE", "MSE", "MSLE")
 
     # set data
     lm_optimization$set_data(
@@ -199,8 +202,7 @@ test_that(
     perf <- mlexperiments::performance(
       object = lm_optimization,
       prediction_results = preds,
-      y_ground_truth = test_y,
-      positive = "1"
+      y_ground_truth = test_y
     )
 
     expect_equal(dim(perf), c(5, 5))
@@ -210,10 +212,9 @@ test_that(
       object = lm_optimization,
       prediction_results = preds,
       y_ground_truth = test_y,
-      type = "regression",
-      positive = "1"
+      type = "regression"
     )
 
-    expect_equal(dim(perf), c(5, 9))
+    expect_equal(dim(perf), c(5, 17))
   }
 )

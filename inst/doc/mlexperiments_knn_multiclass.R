@@ -76,7 +76,7 @@ learner_args <- list(
 # required for mlexperiments::MLCrossValidation and
 # mlexperiments::MLNestedCV
 predict_args <- list(type = "response")
-performance_metric <- metric("bacc")
+performance_metric <- metric("ACC")
 performance_metric_args <- NULL
 return_models <- FALSE
 
@@ -206,8 +206,8 @@ validator_results <- validator$execute()
 
 head(validator_results)
 #>     fold performance  k l use.all
-#> 1: Fold1   0.8931022 58 2   FALSE
-#> 2: Fold2   0.8445084 58 2   FALSE
+#> 1: Fold1   0.8911290 58 2   FALSE
+#> 2: Fold2   0.8448043 58 2   FALSE
 #> 3: Fold3   0.9010913 58 2   FALSE
 
 
@@ -275,9 +275,9 @@ validator_results <- validator$execute()
 
 head(validator_results)
 #>     fold performance  k l use.all
-#> 1: Fold1   0.8863818 64 2   FALSE
-#> 2: Fold2   0.8396360 64 2   FALSE
-#> 3: Fold3   0.9000926 64 2   FALSE
+#> 1: Fold1   0.8884409 64 2   FALSE
+#> 2: Fold2   0.8434548 64 2   FALSE
+#> 3: Fold3   0.8911290 64 2   FALSE
 
 
 ## -----------------------------------------------------------------------------
@@ -325,9 +325,9 @@ validator_results <- validator$execute()
 
 head(validator_results)
 #>     fold performance  k l use.all
-#> 1: Fold1   0.8702444 28 2   FALSE
-#> 2: Fold2   0.8396360 64 2   FALSE
-#> 3: Fold3   0.9010913 58 2   FALSE
+#> 1: Fold1   0.8602151 28 2   FALSE
+#> 2: Fold2   0.8434548 64 2   FALSE
+#> 3: Fold3   0.8911290 58 2   FALSE
 
 
 ## ----include=FALSE------------------------------------------------------------
